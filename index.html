@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Renix MX1 — Login</title>
+  <style>
+    :root { --bg:#0b0f14; --card:#121823; --text:#e6edf3; --muted:#9fb3c8; --accent:#7c5cff; --accent-2:#17c964; --danger:#ff5d5d; --border:#1f2a3a; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:radial-gradient(1200px 600px at 20% -10%,rgba(124,92,255,0.12),transparent 60%),radial-gradient(900px 500px at 120% 10%,rgba(23,201,100,0.10),transparent 60%),var(--bg);display:flex;align-items:center;justify-content:center}
+    .login-container{max-width:420px;width:100%;margin:0 20px}
+    .title{font-size:clamp(28px,4vw,48px);font-weight:800;letter-spacing:0.3px;margin:0 0 8px;text-align:center}
+    .subtitle{color:var(--muted);margin:0 0 32px;text-align:center}
+    .card{background:linear-gradient(180deg,#121823,#0f141d);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.35)}
+    .form-group{margin-bottom:20px}
+    label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px;font-weight:500}
+    input[type="password"],input[type="text"]{width:100%;background:#0b111a;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:14px 16px;font-size:16px;transition:border-color 0.2s ease, box-shadow 0.2s ease}
+    input[type="password"]:focus,input[type="text"]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,0.12)}
+    button{appearance:none;border:none;background:var(--accent);color:white;border-radius:12px;padding:14px 20px;font-weight:700;cursor:pointer;transition:transform .05s ease, box-shadow .2s ease;box-shadow:0 6px 16px rgba(124,92,255,.32);width:100%;font-size:16px}
+    button:hover{transform:translateY(-1px)}
+    button:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+    .error{color:var(--danger);font-size:14px;margin-top:8px;text-align:center}
+    .success{color:var(--accent-2);font-size:14px;margin-top:8px;text-align:center}
+    .pill{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#c5d3e0;background:#0b111a;border:1px dashed var(--border);padding:6px 10px;border-radius:999px}
+    .footer{margin-top:24px;color:var(--muted);font-size:12px;text-align:center}
+    .attempts{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .shake { animation: shake 0.3s ease-in-out; }
+  </style>
+</head>
+<body>
+<div class="login-container">
+  <h1 class="title">Renix MX1</h1>
+  <p class="subtitle">Access the <span class="pill">RX1</span> encryption system</p>
+  
+  <div class="card">
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="password">Enter Password</label>
+        <input type="password" id="password" placeholder="Password required to access MX1" required />
+      </div>
+      
+      <button type="submit" id="loginBtn">Access System</button>
+      
+      <div id="message"></div>
+      <div id="attempts" class="attempts"></div>
+    </form>
+  </div>
+  
+  <p class="footer">© 2025 Renix MX1 • Secure access portal</p>
+</div>
+
+<script>
+(function() {
+
+  const PREFIX = 'RX1:';
+  const ALPHABET = 'R3N1X9BCDFGHJKLMPQSTUVWYZ2480567';
+  const DECODING = (() => {
+    const m = {};
+    for (let i = 0; i < ALPHABET.length; i++) m[ALPHABET[i]] = i;
+    return m;
+  })();
+  
+  function shiftBytes(bytes, delta) {
+    const out = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) out[i] = (bytes[i] + delta + 256) & 255;
+    return out;
+  }
+  
+  function fromBase32(str) {
+    const s = str.replace(/\s+/g, '').replace(/=/g, '').toUpperCase();
+    let bitBuffer = 0, bits = 0, out = [];
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (!(ch in DECODING)) throw new Error(`Invalid MX1 character: ${ch}`);
+      bitBuffer = (bitBuffer << 5) | DECODING[ch];
+      bits += 5;
+      if (bits >= 8) {
+        bits -= 8;
+        out.push((bitBuffer >> bits) & 255);
+        bitBuffer &= (1 << bits) - 1;
+      }
+    }
+    return new Uint8Array(out);
+  }
+  
+  function decryptPassword(encryptedCode) {
+    if (!encryptedCode.toUpperCase().startsWith(PREFIX)) return null;
+    try {
+      const body = encryptedCode.slice(PREFIX.length);
+      const shifted = fromBase32(body);
+      return new TextDecoder().decode(shiftBytes(shifted, -7));
+    } catch {
+      return null;
+    }
+  }
+  
+  const ENCRYPTED_PASSWORD = 'RX1:M9WCG017CX8TSMR=';
+  const CORRECT_PASSWORD = decryptPassword(ENCRYPTED_PASSWORD);
+  const MAX_ATTEMPTS = 5;
+  
+  let attempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
+  let lastAttemptTime = parseInt(sessionStorage.getItem('lastAttemptTime') || '0');
+  
+  const form = document.getElementById('loginForm');
+  const passwordInput = document.getElementById('password');
+  const loginBtn = document.getElementById('loginBtn');
+  const message = document.getElementById('message');
+  const attemptsDiv = document.getElementById('attempts');
+  
+  function updateAttemptsDisplay() {
+    if (attempts > 0) {
+      const remaining = MAX_ATTEMPTS - attempts;
+      attemptsDiv.textContent = `${remaining} attempt${remaining !== 1 ? 's' : ''} remaining`;
+    }
+  }
+  
+  function showMessage(text, isError = false) {
+    message.textContent = text;
+    message.className = isError ? 'error' : 'success';
+    if (isError) {
+      form.classList.add('shake');
+      setTimeout(() => form.classList.remove('shake'), 300);
+    }
+  }
+  
+  function isBlocked() {
+    const now = Date.now();
+    const timeSinceLastAttempt = now - lastAttemptTime;
+    const blockDuration = 60000 * Math.pow(2, Math.max(0, attempts - MAX_ATTEMPTS)); // Exponential backoff
+    
+    return attempts >= MAX_ATTEMPTS && timeSinceLastAttempt < blockDuration;
+  }
+  
+  function getBlockTimeRemaining() {
+    const now = Date.now();
+    const timeSinceLastAttempt = now - lastAttemptTime;
+    const blockDuration = 60000 * Math.pow(2, Math.max(0, attempts - MAX_ATTEMPTS));
+    const remaining = blockDuration - timeSinceLastAttempt;
+    
+    return Math.ceil(remaining / 1000);
+  }
+  
+  function checkBlockStatus() {
+    if (isBlocked()) {
+      const seconds = getBlockTimeRemaining();
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      
+      loginBtn.disabled = true;
+      passwordInput.disabled = true;
+      
+      if (minutes > 0) {
+        showMessage(`Too many failed attempts. Try again in ${minutes}m ${remainingSeconds}s`, true);
+      } else {
+        showMessage(`Too many failed attempts. Try again in ${seconds}s`, true);
+      }
+      
+      setTimeout(checkBlockStatus, 1000);
+    } else {
+      loginBtn.disabled = false;
+      passwordInput.disabled = false;
+      if (attempts >= MAX_ATTEMPTS) {
+        // Reset attempts after block expires
+        attempts = 0;
+        sessionStorage.setItem('loginAttempts', '0');
+        message.textContent = '';
+        updateAttemptsDisplay();
+      }
+    }
+  }
+  
+  // Check if user is already authenticated
+  if (sessionStorage.getItem('authenticated') === 'true') {
+    window.location.href = '52487234085885.html';
+    return;
+  }
+  
+  // Initialize display
+  updateAttemptsDisplay();
+  checkBlockStatus();
+  
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (isBlocked()) {
+      checkBlockStatus();
+      return;
+    }
+    
+    const password = passwordInput.value.trim();
+    
+    if (!password) {
+      showMessage('Please enter a password', true);
+      return;
+    }
+    
+    if (password === CORRECT_PASSWORD) {
+      showMessage('Access granted! Redirecting...', false);
+      sessionStorage.setItem('authenticated', 'true');
+      sessionStorage.removeItem('loginAttempts');
+      sessionStorage.removeItem('lastAttemptTime');
+      
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1000);
+    } else {
+      attempts++;
+      lastAttemptTime = Date.now();
+      sessionStorage.setItem('loginAttempts', attempts.toString());
+      sessionStorage.setItem('lastAttemptTime', lastAttemptTime.toString());
+      
+      if (attempts >= MAX_ATTEMPTS) {
+        showMessage('Access denied. Too many failed attempts.', true);
+        checkBlockStatus();
+      } else {
+        showMessage('Incorrect password', true);
+        updateAttemptsDisplay();
+      }
+      
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  });
+  
+  // Focus password input on load
+  passwordInput.focus();
+  
+  // Clear authentication on page unload (optional - for security)
+  window.addEventListener('beforeunload', function() {
+    // Uncomment the line below if you want users to re-login each session
+    // sessionStorage.removeItem('authenticated');
+  });
+})();
+</script>
+</body>
+</html>
