@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Renix MX1 — Encrypted Code</title>
+  <style>
+    :root { --bg:#0b0f14; --card:#121823; --text:#e6edf3; --muted:#9fb3c8; --accent:#7c5cff; --accent-2:#17c964; --danger:#ff5d5d; --border:#1f2a3a; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:radial-gradient(1200px 600px at 20% -10%,rgba(124,92,255,0.12),transparent 60%),radial-gradient(900px 500px at 120% 10%,rgba(23,201,100,0.10),transparent 60%),var(--bg)}
+    .wrap{max-width:1000px;margin:40px auto;padding:24px}
+    .title{font-size:clamp(24px,3vw,40px);font-weight:800;letter-spacing:0.3px;margin:0 0 6px}
+    .subtitle{color:var(--muted);margin:0 0 24px}
+    .grid{display:grid;gap:16px;grid-template-columns:1fr}
+    @media(min-width:960px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:linear-gradient(180deg,#121823,#0f141d);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.35)}
+    .card h2{margin:0 0 12px;font-size:18px;letter-spacing:0.2px}
+    textarea,input[type="text"],input[type="password"]{width:100%;background:#0b111a;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:12px 14px;font-size:15px;min-height:140px;resize:vertical}
+    input[type="text"],input[type="password"]{min-height:auto}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    button{appearance:none;border:none;background:var(--accent);color:white;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;transition:transform .05s ease, box-shadow .2s ease;box-shadow:0 6px 16px rgba(124,92,255,.32)}
+    button:hover{transform:translateY(-1px)}
+    .ghost{background:#0b111a;color:var(--text);border:1px solid var(--border);box-shadow:none}
+    .success{background:var(--accent-2); box-shadow:0 8px 20px rgba(23,201,100,.25)}
+    .danger{background:var(--danger)}
+    .pill{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#c5d3e0;background:#0b111a;border:1px dashed var(--border);padding:6px 10px;border-radius:999px}
+    .muted{color:var(--muted)}
+    .footer{margin-top:18px;color:var(--muted);font-size:12px}
+    .mini{font-size:12px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+<h1 class="title">Renix MX1 — Encrypted Code</h1>
+<p class="subtitle">Encode & decode text with the custom <span class="pill">RX1</span> scheme. Not binary. Not Morse. Your own thing.</p>
+<div class="grid">
+<section class="card">
+<h2>1) Your Text</h2>
+<textarea id="plain" placeholder="Type text here…">renix</textarea>
+<div style="margin-top:12px">
+<label class="mini muted" for="pass">Password for RX1E (leave blank to use simple RX1):</label>
+<input id="pass" type="password" placeholder="Enter password for secure encryption (RX1E)" />
+</div>
+<div class="row" style="margin-top:10px">
+<button id="btn-encode">Encode →</button>
+<button id="btn-decode" class="ghost">Decode ←</button>
+<button id="btn-enc-sec" class="success">Encrypt RX1E →</button>
+<button id="btn-dec-sec" class="ghost">Decrypt RX1E ←</button>
+<button id="btn-swap" class="ghost">Swap</button>
+<button id="btn-clear" class="danger">Clear</button>
+</div>
+</section>
+<section class="card">
+<h2>2) Renix MX1 Code</h2>
+<input id="coded" type="text" placeholder="RX1:… or RX1E:… will appear here" />
+<div class="row" style="margin-top:10px">
+<button id="btn-copy-coded" class="success">Copy Code</button>
+<button id="btn-copy-plain" class="ghost">Copy Text</button>
+</div>
+<p class="mini muted" id="status"></p>
+</section>
+</div>
+<p class="footer">© 2025 Renix MX1 • Made to be tiny, fast, and offline.</p>
+</div>
+<script>
+(async function(){
+const PREFIX='RX1:',PREFIX_E='RX1E:';
+const ALPHABET='R3N1X9BCDFGHJKLMPQSTUVWYZ2480567';
+const DECODING=(()=>{const m={};for(let i=0;i<ALPHABET.length;i++)m[ALPHABET[i]]=i;return m;})();
+function shiftBytes(bytes,delta){const out=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)out[i]=(bytes[i]+delta+256)&255;return out;}
+function toBase32(bytes){let out='';let bitBuffer=0,bits=0;for(let i=0;i<bytes.length;i++){bitBuffer=(bitBuffer<<8)|bytes[i];bits+=8;while(bits>=5){out+=ALPHABET[(bitBuffer>>(bits-5))&31];bits-=5;}}if(bits>0)out+=ALPHABET[(bitBuffer<<(5-bits))&31];while(out.length%8!==0)out+='=';return out;}
+function fromBase32(str){const s=str.replace(/\s+/g,'').replace(/=/g,'').toUpperCase();let bitBuffer=0,bits=0,out=[];for(let i=0;i<s.length;i++){const ch=s[i];if(!(ch in DECODING))throw new Error(`Invalid MX1 character: ${ch}`);bitBuffer=(bitBuffer<<5)|DECODING[ch];bits+=5;if(bits>=8){bits-=8;out.push((bitBuffer>>bits)&255);bitBuffer&=(1<<bits)-1;}}return new Uint8Array(out);}
+function encodeMX1(text){const enc=new TextEncoder(),bytes=enc.encode(text),shifted=shiftBytes(bytes,7);return PREFIX+toBase32(shifted);}
+function decodeMX1(code){if(!code.toUpperCase().startsWith(PREFIX))throw new Error('Missing RX1: prefix');const body=code.slice(PREFIX.length);const shifted=fromBase32(body);return new TextDecoder().decode(shiftBytes(shifted,-7));}
+async function deriveKey(pass,salt){const enc=new TextEncoder();const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(pass),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+function randBytes(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return a;}
+function concatBytes(a,b,c){const out=new Uint8Array(a.length+b.length+c.length);out.set(a,0);out.set(b,a.length);out.set(c,a.length+b.length);return out;}
+async function encryptRX1E(text,password){if(!password)throw new Error('Password required for RX1E');const enc=new TextEncoder();const salt=randBytes(16),iv=randBytes(12),key=await deriveKey(password,salt);const pt=enc.encode(text);const ctBuf=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,pt);return PREFIX_E+toBase32(concatBytes(salt,iv,new Uint8Array(ctBuf)));}
+async function decryptRX1E(code,password){if(!code.toUpperCase().startsWith(PREFIX_E))throw new Error('Missing RX1E: prefix');if(!password)throw new Error('Password required');const body=code.slice(PREFIX_E.length);const all=fromBase32(body);if(all.length<16+12+16)throw new Error('RX1E: data too short');const salt=all.slice(0,16),iv=all.slice(16,28),ct=all.slice(28);const key=await deriveKey(password,salt);try{const ptBuf=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);return new TextDecoder().decode(ptBuf);}catch(e){throw new Error('Decryption failed (wrong password or corrupted data)');}}
+const $=(sel)=>document.querySelector(sel);
+const plain=$('#plain'),coded=$('#coded'),pass=$('#pass'),status=$('#status');
+function flash(msg,ok=true){status.textContent=msg;status.style.color=ok?'var(--accent-2)':'var(--danger)';clearTimeout(flash._t);flash._t=setTimeout(()=>{status.textContent='';},2500);}
+$('#btn-encode').addEventListener('click',()=>{try{coded.value=encodeMX1(plain.value);flash('Encoded ✓');}catch(e){flash(e.message,false);}});
+$('#btn-decode').addEventListener('click',()=>{try{plain.value=decodeMX1(coded.value);flash('Decoded ✓');}catch(e){flash(e.message,false);}});
+$('#btn-enc-sec').addEventListener('click',async()=>{try{coded.value=await encryptRX1E(plain.value,pass.value);flash('Encrypted (RX1E) ✓');}catch(e){flash(e.message,false);}});
+$('#btn-dec-sec').addEventListener('click',async()=>{try{plain.value=await decryptRX1E(coded.value,pass.value);
+plain.value=await decryptRX1E(coded.value,pass.value);flash('Decrypted (RX1E) ✓');}catch(e){flash(e.message,false);}});
+$('#btn-swap').addEventListener('click',()=>{const a=plain.value;plain.value=coded.value;coded.value=a;flash('Swapped');});
+$('#btn-clear').addEventListener('click',()=>{plain.value='';coded.value='';flash('Cleared');});
+$('#btn-copy-coded').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(coded.value);flash('Code copied');}catch{flash('Clipboard blocked',false);}});
+$('#btn-copy-plain').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(plain.value);flash('Text copied');}catch{flash('Clipboard blocked',false);}});
+coded.value=encodeMX1(plain.value);
+})();
+</script>
+</body>
+</html>
