@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Renix MX1 — Login</title>
+  <style>
+    :root { 
+      --bg:#0b0f14; 
+      --card:#121823; 
+      --text:#e6edf3; 
+      --muted:#9fb3c8; 
+      --accent:#7c5cff; 
+      --accent-2:#17c964; 
+      --danger:#ff5d5d; 
+      --border:#1f2a3a; 
+    }
+    
+    * { box-sizing: border-box }
+    html, body { height: 100% }
+    
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(124,92,255,0.12), transparent 60%),
+                  radial-gradient(900px 500px at 120% 10%, rgba(23,201,100,0.10), transparent 60%),
+                  var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .login-container {
+      max-width: 420px;
+      width: 100%;
+      margin: 0 20px;
+    }
+    
+    .title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      margin: 0 0 8px;
+      text-align: center;
+    }
+    
+    .subtitle {
+      color: var(--muted);
+      margin: 0 0 32px;
+      text-align: center;
+    }
+    
+    .card {
+      background: linear-gradient(180deg, #121823, #0f141d);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      background: #0b111a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 16px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    input[type="text"]:focus, input[type="password"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,92,255,0.12);
+    }
+    
+    input:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    button {
+      appearance: none;
+      border: none;
+      background: var(--accent);
+      color: white;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .05s ease, box-shadow .2s ease;
+      box-shadow: 0 6px 16px rgba(124,92,255,.32);
+      width: 100%;
+      font-size: 16px;
+    }
+    
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .loading {
+      position: relative;
+      color: transparent;
+    }
+    
+    .loading::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    
+    .error {
+      color: var(--danger);
+      font-size: 14px;
+      margin-top: 8px;
+      text-align: center;
+      padding: 8px;
+      background: rgba(255, 93, 93, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 93, 93, 0.2);
+    }
+    
+    .success {
+      color: var(--accent-2);
+      font-size: 14px;
+      margin-top: 8px;
+      text-align: center;
+      padding: 8px;
+      background: rgba(23, 201, 100, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(23, 201, 100, 0.2);
+    }
+    
+    .pill {
+      display: inline-block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: #c5d3e0;
+      background: #0b111a;
+      border: 1px dashed var(--border);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+    
+    .footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    .status-info {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 12px;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    
+    .shake {
+      animation: shake 0.3s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+<div class="login-container">
+  <h1 class="title">Renix MX1</h1>
+  <p class="subtitle">Access the <span class="pill">RX1</span> or <span class="pill">RX2</span> encryption system</p>
+  
+  <div class="card">
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter your username" required autocomplete="username" />
+      </div>
+      
+      <div class="form-group">
+        <label for="pin">PIN</label>
+        <input type="password" id="pin" placeholder="Enter your PIN" required autocomplete="current-password" />
+      </div>
+      
+      <button type="submit" id="loginBtn">Access System</button>
+      
+      <div id="message"></div>
+      <div id="statusInfo" class="status-info"></div>
+    </form>
+  </div>
+  
+  <p class="footer">© 2025 Renix MX1 • Secure access portal</p>
+</div>
+
+<script>
+(function() {
+  const form = document.getElementById('loginForm');
+  const usernameInput = document.getElementById('username');
+  const pinInput = document.getElementById('pin');
+  const loginBtn = document.getElementById('loginBtn');
+  const message = document.getElementById('message');
+  const statusInfo = document.getElementById('statusInfo');
+  
+  let blockTimer = null;
+  
+  function showMessage(text, isError = false) {
+    message.textContent = text;
+    message.className = isError ? 'error' : 'success';
+    
+    if (isError) {
+      form.classList.add('shake');
+      setTimeout(() => form.classList.remove('shake'), 300);
+    }
+  }
+  
+  function setLoading(loading) {
+    loginBtn.disabled = loading;
+    loginBtn.className = loading ? 'loading' : '';
+    usernameInput.disabled = loading;
+    pinInput.disabled = loading;
+  }
+  
+  function updateBlockStatus(timeRemaining) {
+    if (timeRemaining > 0) {
+      const minutes = Math.floor(timeRemaining / 60);
+      const seconds = timeRemaining % 60;
+      
+      if (minutes > 0) {
+        statusInfo.textContent = `Too many failed attempts. Try again in ${minutes}m ${seconds}s`;
+      } else {
+        statusInfo.textContent = `Too many failed attempts. Try again in ${seconds}s`;
+      }
+      
+      setLoading(true);
+      
+      if (!blockTimer) {
+        blockTimer = setInterval(() => {
+          timeRemaining--;
+          if (timeRemaining <= 0) {
+            clearInterval(blockTimer);
+            blockTimer = null;
+            statusInfo.textContent = '';
+            setLoading(false);
+            message.textContent = '';
+          } else {
+            updateBlockStatus(timeRemaining);
+          }
+        }, 1000);
+      }
+    } else {
+      if (blockTimer) {
+        clearInterval(blockTimer);
+        blockTimer = null;
+      }
+      statusInfo.textContent = '';
+      setLoading(false);
+    }
+  }
+  
+  // Check session status on load
+  fetch('/api/session')
+    .then(response => response.json())
+    .then(data => {
+      if (data.authenticated) {
+        window.location.href = '/';
+      }
+    })
+    .catch(() => {
+      // Ignore errors, proceed with login form
+    });
+  
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = usernameInput.value.trim();
+    const pin = pinInput.value.trim();
+    
+    if (!username || !pin) {
+      showMessage('Please enter both username and PIN', true);
+      return;
+    }
+    
+    setLoading(true);
+    message.textContent = '';
+    
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, pin })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showMessage('Access granted! Redirecting...', false);
+        setTimeout(() => {
+          window.location.href = data.redirectUrl || '/';
+        }, 1000);
+      } else {
+        showMessage(data.message, true);
+        
+        if (data.timeRemaining) {
+          updateBlockStatus(data.timeRemaining);
+        } else {
+          setLoading(false);
+          
+          if (data.attemptsRemaining !== undefined) {
+            statusInfo.textContent = `${data.attemptsRemaining} attempt${data.attemptsRemaining !== 1 ? 's' : ''} remaining`;
+          }
+        }
+        
+        pinInput.value = '';
+        if (!usernameInput.disabled) {
+          pinInput.focus();
+        }
+      }
+    } catch (error) {
+      showMessage('Connection error. Please try again.', true);
+      setLoading(false);
+      console.error('Login error:', error);
+    }
+  });
+  
+  // Focus username input on load
+  usernameInput.focus();
+  
+  // Clear any existing timers on page unload
+  window.addEventListener('beforeunload', function() {
+    if (blockTimer) {
+      clearInterval(blockTimer);
+    }
+  });
+})();
+</script>
+</body>
+</html>
